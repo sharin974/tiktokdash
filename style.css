@@ -1,0 +1,125 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: white;
+    margin: 0;
+    padding: 0;
+}
+
+#statusContainer {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+#statusIndicator {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.logWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.logContainer {
+    width: 90%;
+    margin: 10px;
+    padding: 10px;
+    max-height: 180px;
+    min-height: 180px;
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+.logChat {
+    width: 90%;
+    margin: 10px;
+    padding: 10px;
+    max-height: 300px;
+    min-height: 300px;
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+#chatLog {
+    flex: 2;
+}
+
+#feedLog {
+    flex: 1;
+    max-height: 150px; /* Réduction de la hauteur du feed */
+}
+
+.chatMessage, .giftMessage, .shareMessage {
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.chatMessage:hover, .giftMessage:hover, .shareMessage:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+span#liveStatus, span#status, span#viewerCount {
+    margin: 0px 5px 0px 5px;
+}
+
+h2 {
+    text-align: center;
+}
+
+/* Alternance de couleur pour le feed */
+.giftMessage:nth-child(odd), .shareMessage:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.giftMessage:nth-child(even), .shareMessage:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Killfeed positionné à droite */
+#killFeedContainer {
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    width: 300px;
+    max-height: 300px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    z-index: 10;
+}
+
+.killfeed-entry {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    width: 100%;
+    font-size: 14px;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.killfeed-entry img {
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    margin-right: 5px;
+}
+
+.killfeed-entry.fade-out {
+    opacity: 0;
+}

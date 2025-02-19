@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord TikTok</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Status du live -->
+    <div id="statusContainer">
+        <div id="statusIndicator"></div>
+        <span id="status">Disconnected</span>
+        <span id="liveStatus" class="offline">OFFLINE</span>
+        <span id="viewerCount">Viewers: 0</span>
+    </div>
+    
+    <!-- Chat -->
+    <div class="logWrapper">
+        <h2>CHAT</h2>
+        <div id="chatLog" class="logChat"></div>
+    </div>
+    
+    <!-- Feeds (Gifts, Likes, Shares) -->
+    <div class="logWrapper">
+        <h2>FEEDS</h2>
+        <div id="feedLog" class="logContainer"></div>
+    </div>
+    
+    <!-- Killfeed (Notifications d'entrée) -->
+    <div id="killFeedContainer"></div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
