@@ -123,3 +123,6 @@ h2 {
 .killfeed-entry.fade-out {
     opacity: 0;
 }
+img.avatar {
+    width: 20px;
+}

@@ -1,5 +1,9 @@
-let websocket = null;
 
+let websocket = null;
+function updateViewerCount(count) {
+    const viewerCountSpan = document.getElementById("viewerCount");
+    viewerCountSpan.textContent = `Viewers: ${count}`;
+}
 function connect() {
     if (websocket) return;
 
@@ -32,14 +36,14 @@ function connect() {
             addChatMessage(parsedData.data);
         } else if (["gift", "like", "share"].includes(parsedData.event)) {
             addActivity(parsedData.event, parsedData.data);
-        } else if ("roomUser"){
-			addviewcount(parserdData.viewerCount);
+        } else if ("roomUser" && parsedData.data.viewerCount){
+			updateViewerCount(parsedData.data.viewerCount);
 		}
     };
 }
 
 function addChatMessage(data) {
-    let chatContainer = document.getElementById("chat");
+    let chatContainer = document.getElementById("chatLog");
     let messageElement = document.createElement("div");
     messageElement.classList.add("chat-message");
     messageElement.innerHTML = `
@@ -52,7 +56,7 @@ function addChatMessage(data) {
 }
 
 function addActivity(type, data) {
-    let activityContainer = document.getElementById("activity");
+    let activityContainer = document.getElementById("feedLog");
     let activityElement = document.createElement("div");
     activityElement.classList.add("activity-entry", type);
     activityElement.innerHTML = `
@@ -71,12 +75,15 @@ function formatActivityMessage(type, data) {
         return `a aimé le live`;
     } else if (type === "share") {
         return `a partagé le live`;
+    } else if (type === "follow") {
+        return `a follow la chaine`;
     }
     return "";
 }
+
+
 document.addEventListener("DOMContentLoaded", () => {
     const chatLog = document.getElementById("killFeedContainer");
-    const viewerCountSpan = document.getElementById("viewerCount");
     const killfeed = [];
     const maxKillfeed = 5;
 
@@ -100,17 +107,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 killfeed.splice(killfeed.indexOf(entry), 1);
             }
         }, 5000);
-    }
-
-    function updateViewerCount(count) {
-        viewerCountSpan.textContent = `Viewers: ${count}`;
+    
     }
 
     function handleEvent(event) {
-        if (event.event === "roomUser" && event.data.viewerCount !== undefined) {
-            updateViewerCount(event.data.viewerCount);
-        }
-        if (event.event === "member" && event.data.uniqueId) {
+        if (event.event === "member" && event.data.userId) {
             addToKillfeed(event.data);
         }
     }
