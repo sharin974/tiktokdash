@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
         });
-    }, 9000);
-});*/
+    }, 9000);*/
+});
 
 window.addEventListener('load', connect);
