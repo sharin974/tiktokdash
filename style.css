@@ -87,6 +87,27 @@ h2 {
     background-color: rgba(255, 255, 255, 0.25);
 }
 
+.chat-message:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.chat-message:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.gift{
+	background-color:rgba(255, 153, 51,0.2);
+}
+.follow{
+	background-color:rgba(51, 153, 255,0.2);
+}
+.share{
+	background-color:rgba(0, 204, 0,0.2);
+}
+.like{
+	background-color:rgba(255, 179, 236,0.2);
+}
+
 /* Killfeed positionné à droite */
 #killFeedContainer {
     position: absolute;
@@ -104,11 +125,23 @@ h2 {
 .killfeed-entry {
     display: flex;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(217, 217, 217, 0.5);
+    padding: 5px;
+	padding-left:20px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    width: 90%;
+    font-size: 14px;
+    transition: opacity 0.5s ease-in-out;
+}
+.chat-message{
+	display: flex;
+    align-items: center;
+    background-color: rgba(217, 217, 217, 0.1);
     padding: 5px;
     border-radius: 5px;
     margin-bottom: 5px;
-    width: 100%;
+    width: 95%;
     font-size: 14px;
     transition: opacity 0.5s ease-in-out;
 }
@@ -125,4 +158,32 @@ h2 {
 }
 img.avatar {
     width: 20px;
+}
+.timestamp {
+    color: gray;
+    font-size: 0.85em;
+    margin-right: 5px;
+}
+#scrollBottomBtn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: none;
+    background-color: #ff5722;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+#clearChatLog {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    background-color: #ff0000;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
 }

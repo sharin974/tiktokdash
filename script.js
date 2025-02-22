@@ -1,9 +1,42 @@
 
 let websocket = null;
+
+document.getElementById("clearChatLog").addEventListener("click", () => {
+    localStorage.removeItem("chatLog");
+    localStorage.removeItem("feedLog");
+    document.getElementById("chatLog").innerHTML = "";
+    document.getElementById("feedLog").innerHTML = "";
+});
+
 function updateViewerCount(count) {
     const viewerCountSpan = document.getElementById("viewerCount");
     viewerCountSpan.textContent = `Viewers: ${count}`;
 }
+function loadChatLog() {
+    let savedMessages = JSON.parse(localStorage.getItem("chatLog") || "[]");
+    savedMessages.forEach(msgHTML => {
+        let messageElement = document.createElement("div");
+        messageElement.classList.add("chat-message");
+        messageElement.innerHTML = msgHTML;
+        chatContainer.appendChild(messageElement);
+    });
+
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function loadFeedLog() {
+    let savedMessages = JSON.parse(localStorage.getItem("feedLog") || "[]");
+    savedMessages.forEach(msgHTML => {
+        let messageElement = document.createElement("div");
+        messageElement.classList.add("activity-entry");
+        messageElement.innerHTML = msgHTML;
+        chatContainer.appendChild(messageElement);
+    });
+
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+document.addEventListener("DOMContentLoaded", loadChatLog);
 function connect() {
     if (websocket) return;
 
@@ -34,37 +67,62 @@ function connect() {
 
         if (parsedData.event === "chat") {
             addChatMessage(parsedData.data);
-        } else if (["gift", "like", "share"].includes(parsedData.event)) {
+        } else if (["gift", "like", "share", "follow"].includes(parsedData.event)) {
             addActivity(parsedData.event, parsedData.data);
         } else if ("roomUser" && parsedData.data.viewerCount){
 			updateViewerCount(parsedData.data.viewerCount);
 		}
     };
 }
+function saveChatLog() {
+    const messages = [...document.querySelectorAll("#chatLog .chat-message")].map(msg => msg.innerHTML);
+    localStorage.setItem("chatLog", JSON.stringify(messages));
+}
+function saveActivities() {
+    const messages = [...document.querySelectorAll("#feedLog")].map(msg => msg.innerHTML);
+    localStorage.setItem("feedLog", JSON.stringify(messages));
+}
 
 function addChatMessage(data) {
     let chatContainer = document.getElementById("chatLog");
+	let autoScroll = true;
+
+chatContainer.addEventListener("scroll", () => {
+    autoScroll = chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 10;
+    document.getElementById("scrollToBottom").style.display = autoScroll ? "none" : "block";
+});
+
+document.getElementById("scrollToBottom").addEventListener("click", () => {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    autoScroll = true;
+});
     let messageElement = document.createElement("div");
+	let currentTime = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit"});
     messageElement.classList.add("chat-message");
     messageElement.innerHTML = `
+		<span class="timestamp">[${currentTime}]</span>
         <img src="${data.profilePictureUrl}" class="avatar">
         <span class="username">${data.nickname} :</span>
         <span class="message">${data.comment}</span>
     `;
     chatContainer.appendChild(messageElement);
+	saveChatLog();
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 function addActivity(type, data) {
     let activityContainer = document.getElementById("feedLog");
     let activityElement = document.createElement("div");
+	let currentTime = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit"})
     activityElement.classList.add("activity-entry", type);
     activityElement.innerHTML = `
+		<span class="timestamp">[${currentTime}]</span>
         <img src="${data.profilePictureUrl}" class="avatar">
         <span class="username">${data.nickname}</span>
         ${formatActivityMessage(type, data)}
     `;
     activityContainer.appendChild(activityElement);
+	saveActivities();
     activityContainer.scrollTop = activityContainer.scrollHeight;
 }
 
@@ -89,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function addToKillfeed(user) {
         const entry = document.createElement("div");
-        entry.classList.add("chatMessage");
+        entry.classList.add("killfeed-entry");
         entry.innerHTML = `
             <img src="${user.profilePictureUrl}" alt="${user.nickname}" width="30" height="30" style="border-radius: 50%;">
             <strong>${user.nickname}</strong> a rejoint.
@@ -111,10 +169,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function handleEvent(event) {
-        if (event.event === "member" && event.data.userId) {
+        if (event.event === "member" && event.data.uniqueId) {
             addToKillfeed(event.data);
         }
     }
+	
+
 
  /*   // Simuler des événements pour test
     setTimeout(() => {
@@ -128,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleEvent({
             event: "member",
             data: {
-				uniqueId: "TestUser",
+				userId: "TestUser",
                 nickname: "TestUser",
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
@@ -138,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleEvent({
             event: "member",
             data: {
-				uniqueId: "TestUser5",
+				userId: "TestUser5",
                 nickname: "TestUser5",
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
@@ -148,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleEvent({
             event: "member",
             data: {
-				uniqueId: "TestUser1",
+				userId: "TestUser1",
                 nickname: "TestUser1",
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
@@ -158,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleEvent({
             event: "member",
             data: {
-				uniqueId: "TestUser2",
+				userId: "TestUser2",
                 nickname: "TestUser2",
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
@@ -168,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleEvent({
             event: "member",
             data: {
-				uniqueId: "TestUser3",
+				userId: "TestUser3",
                 nickname: "TestUser3",
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
@@ -178,12 +238,12 @@ document.addEventListener("DOMContentLoaded", () => {
         handleEvent({
             event: "member",
             data: {
-				uniqueId: "TestUser4",
+				userId: "TestUser4",
                 nickname: "TestUser4",
                 profilePictureUrl: "https://via.placeholder.com/30"
             }
         });
-    }, 9000);*/
-});
+    }, 9000);
+});*/
 
 window.addEventListener('load', connect);
