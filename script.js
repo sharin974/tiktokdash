@@ -1,67 +1,69 @@
-
 let websocket = null;
+const killfeed = [];
+const maxKillfeed = 5;
 
-document.getElementById("clearChatLog").addEventListener("click", () => {
-    localStorage.removeItem("chatLog");
-    localStorage.removeItem("feedLog");
-    document.getElementById("chatLog").innerHTML = "";
-    document.getElementById("feedLog").innerHTML = "";
-});
-
+// Écouteur pour effacer le chat et le feed
+const clearChatLogBtn = document.getElementById("clearChatLog");
+if (clearChatLogBtn) {
+    clearChatLogBtn.addEventListener("click", () => {
+        localStorage.removeItem("chatLog");
+        localStorage.removeItem("feedLog");
+        document.getElementById("chatLog").innerHTML = "";
+        document.getElementById("feedLog").innerHTML = "";
+    });
+}
+//ViewerCount
 function updateViewerCount(count) {
     const viewerCountSpan = document.getElementById("viewerCount");
-    viewerCountSpan.textContent = `Viewers: ${count}`;
+    if (viewerCountSpan) {
+        viewerCountSpan.textContent = `Viewers: ${count}`;
+    }
 }
-function loadChatLog() {
-    let savedMessages = JSON.parse(localStorage.getItem("chatLog") || "[]");
-    savedMessages.forEach(msgHTML => {
+//Charge les messages et les likes des anciens.
+function loadLog(logId, storageKey) {
+    const savedMessages = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    const container = document.getElementById(logId);
+    
+    savedMessages.forEach(msgData => {
         let messageElement = document.createElement("div");
-        messageElement.classList.add("chat-message");
-        messageElement.innerHTML = msgHTML;
-        chatContainer.appendChild(messageElement);
+        messageElement.innerHTML = msgData.html;
+        messageElement.classList.add(...msgData.classes); // Réapplique les classes CSS
+        container.appendChild(messageElement);
     });
 
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    container.scrollTop = container.scrollHeight; // Garde le scroll en bas
 }
 
-function loadFeedLog() {
-    let savedMessages = JSON.parse(localStorage.getItem("feedLog") || "[]");
-    savedMessages.forEach(msgHTML => {
-        let messageElement = document.createElement("div");
-        messageElement.classList.add("activity-entry");
-        messageElement.innerHTML = msgHTML;
-        chatContainer.appendChild(messageElement);
-    });
 
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+document.addEventListener("DOMContentLoaded", () => {
+    loadLog("chatLog", "chatLog");
+    loadLog("feedLog", "feedLog");
+});
 
-document.addEventListener("DOMContentLoaded", loadChatLog);
 function connect() {
     if (websocket) return;
-
     websocket = new WebSocket("ws://localhost:21213/");
 
-    websocket.onopen = function () {
+    websocket.onopen = () => {
         document.getElementById("status").innerText = "Connecté";
-		document.getElementById("statusIndicator").style.backgroundColor = "green";
+        document.getElementById("statusIndicator").style.backgroundColor = "green";
     };
 
-    websocket.onclose = function () {
+    websocket.onclose = () => {
         document.getElementById("status").innerText = "Déconnecté";
-		document.getElementById("statusIndicator").style.backgroundColor = "red";
+        document.getElementById("statusIndicator").style.backgroundColor = "red";
         websocket = null;
         setTimeout(connect, 1000);
     };
 
-    websocket.onerror = function () {
+    websocket.onerror = () => {
         document.getElementById("status").innerText = "Échec de connexion";
-		document.getElementById("statusIndicator").style.backgroundColor = "orange";
+        document.getElementById("statusIndicator").style.backgroundColor = "orange";
         websocket = null;
         setTimeout(connect, 1000);
     };
 
-    websocket.onmessage = function (event) {
+    websocket.onmessage = (event) => {
         let parsedData = JSON.parse(event.data);
         console.log("Données reçues", parsedData);
 
@@ -69,181 +71,117 @@ function connect() {
             addChatMessage(parsedData.data);
         } else if (["gift", "like", "share", "follow"].includes(parsedData.event)) {
             addActivity(parsedData.event, parsedData.data);
-        } else if ("roomUser" && parsedData.data.viewerCount){
-			updateViewerCount(parsedData.data.viewerCount);
-		}
+        } else if (parsedData.event === "roomUser" && parsedData.data.viewerCount) {
+            updateViewerCount(parsedData.data.viewerCount);
+        } else if ((parsedData.event === "member" || parsedData.event === "roomUser") && parsedData.data.uniqueId) {
+            addToKillfeed(parsedData.data);
+        }
     };
 }
-function saveChatLog() {
-    const messages = [...document.querySelectorAll("#chatLog .chat-message")].map(msg => msg.innerHTML);
-    localStorage.setItem("chatLog", JSON.stringify(messages));
-}
-function saveActivities() {
-    const messages = [...document.querySelectorAll("#feedLog")].map(msg => msg.innerHTML);
-    localStorage.setItem("feedLog", JSON.stringify(messages));
+//Sauvegarde des logs messages et activites
+function saveLog(logId, storageKey) {
+    const messages = [...document.querySelectorAll(`#${logId} div`)].map(msg => ({
+        html: msg.innerHTML,
+        classes: [...msg.classList] // Sauvegarde toutes les classes CSS de l'élément
+    }));
+    localStorage.setItem(storageKey, JSON.stringify(messages));
+    
 }
 
 function addChatMessage(data) {
     let chatContainer = document.getElementById("chatLog");
-	let autoScroll = true;
+    if (!chatContainer) return;
 
-chatContainer.addEventListener("scroll", () => {
-    autoScroll = chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 10;
-    document.getElementById("scrollToBottom").style.display = autoScroll ? "none" : "block";
-});
-
-document.getElementById("scrollToBottom").addEventListener("click", () => {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    autoScroll = true;
-});
     let messageElement = document.createElement("div");
-	let currentTime = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit"});
+    let currentTime = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     messageElement.classList.add("chat-message");
     messageElement.innerHTML = `
-		<span class="timestamp">[${currentTime}]</span>
+        <span class="timestamp">[${currentTime}]</span>
         <img src="${data.profilePictureUrl}" class="avatar">
         <span class="username">${data.nickname} :</span>
         <span class="message">${data.comment}</span>
     `;
     chatContainer.appendChild(messageElement);
-	saveChatLog();
+    saveLog("chatLog", "chatLog");
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 function addActivity(type, data) {
     let activityContainer = document.getElementById("feedLog");
+    if (!activityContainer) return;
+
     let activityElement = document.createElement("div");
-	let currentTime = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit"})
+    let currentTime = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     activityElement.classList.add("activity-entry", type);
     activityElement.innerHTML = `
-		<span class="timestamp">[${currentTime}]</span>
+        <span class="timestamp">[${currentTime}]</span>
         <img src="${data.profilePictureUrl}" class="avatar">
         <span class="username">${data.nickname}</span>
         ${formatActivityMessage(type, data)}
     `;
     activityContainer.appendChild(activityElement);
-	saveActivities();
+    saveLog("feedLog", "feedLog");
     activityContainer.scrollTop = activityContainer.scrollHeight;
 }
 
 function formatActivityMessage(type, data) {
-    if (type === "gift") {
-        return `a offert ${data.repeatCount} <img src="${data.giftPictureUrl}" class="gift-image">`;
-    } else if (type === "like") {
-        return `a aimé le live`;
-    } else if (type === "share") {
-        return `a partagé le live`;
-    } else if (type === "follow") {
-        return `a follow la chaine`;
+    switch (type) {
+        case "gift":
+            return `a offert ${data.repeatCount} <img src="${data.giftPictureUrl}" class="gift-image">`;
+        case "like":
+            return `a aimé le live`;
+        case "share":
+            return `a partagé le live`;
+        case "follow":
+            return `a follow la chaîne`;
+        default:
+            return "";
     }
-    return "";
 }
 
-
-document.addEventListener("DOMContentLoaded", () => {
+function addToKillfeed(user) {
     const chatLog = document.getElementById("killFeedContainer");
-    const killfeed = [];
-    const maxKillfeed = 5;
+    if (!chatLog) return;
 
-    function addToKillfeed(user) {
-        const entry = document.createElement("div");
-        entry.classList.add("killfeed-entry");
-        entry.innerHTML = `
-            <img src="${user.profilePictureUrl}" alt="${user.nickname}" width="30" height="30" style="border-radius: 50%;">
-            <strong>${user.nickname}</strong> a rejoint.
-        `;
-        chatLog.appendChild(entry);
-        killfeed.push(entry);
-        
-        if (killfeed.length > maxKillfeed) {
-            chatLog.removeChild(killfeed.shift());
-        }
-        
-        setTimeout(() => {
-            if (killfeed.includes(entry)) {
-                chatLog.removeChild(entry);
-                killfeed.splice(killfeed.indexOf(entry), 1);
-            }
-        }, 5000);
-    
+    const entry = document.createElement("div");
+    entry.classList.add("killfeed-entry");
+    entry.innerHTML = `
+        <img src="${user.profilePictureUrl ?? "default.png"}" alt="${user.nickname}" width="30" height="30" style="border-radius: 50%;">
+        <strong>${user.nickname}</strong> a rejoint.
+    `;
+    chatLog.appendChild(entry);
+    killfeed.push(entry);
+
+    if (killfeed.length > maxKillfeed) {
+        chatLog.removeChild(killfeed.shift());
     }
 
-    function handleEvent(event) {
-        if (event.event === "member" && event.data.uniqueId) {
-            addToKillfeed(event.data);
+    setTimeout(() => {
+        if (killfeed.includes(entry)) {
+            chatLog.removeChild(entry);
+            killfeed.splice(killfeed.indexOf(entry), 1);
         }
-    }
-	
-
-
- /*   // Simuler des événements pour test
-    setTimeout(() => {
-        handleEvent({
-            event: "roomUser",
-            data: { viewerCount: 10 }
-        });
-    }, 2000);
-    
-    setTimeout(() => {
-        handleEvent({
-            event: "member",
-            data: {
-				userId: "TestUser",
-                nickname: "TestUser",
-                profilePictureUrl: "https://via.placeholder.com/30"
-            }
-        });
-    }, 4000);
-	setTimeout(() => {
-        handleEvent({
-            event: "member",
-            data: {
-				userId: "TestUser5",
-                nickname: "TestUser5",
-                profilePictureUrl: "https://via.placeholder.com/30"
-            }
-        });
     }, 5000);
-	setTimeout(() => {
-        handleEvent({
-            event: "member",
-            data: {
-				userId: "TestUser1",
-                nickname: "TestUser1",
-                profilePictureUrl: "https://via.placeholder.com/30"
-            }
-        });
-    }, 6000);
-	setTimeout(() => {
-        handleEvent({
-            event: "member",
-            data: {
-				userId: "TestUser2",
-                nickname: "TestUser2",
-                profilePictureUrl: "https://via.placeholder.com/30"
-            }
-        });
-    }, 7000);
-	setTimeout(() => {
-        handleEvent({
-            event: "member",
-            data: {
-				userId: "TestUser3",
-                nickname: "TestUser3",
-                profilePictureUrl: "https://via.placeholder.com/30"
-            }
-        });
-    }, 8000);
-	setTimeout(() => {
-        handleEvent({
-            event: "member",
-            data: {
-				userId: "TestUser4",
-                nickname: "TestUser4",
-                profilePictureUrl: "https://via.placeholder.com/30"
-            }
-        });
-    }, 9000);
-});*/
+}
+
+// Fonction pour gérer la visibilité des boutons de scroll
+function handleScroll(logId, btnId) {
+    const logContainer = document.getElementById(logId);
+    const scrollBtn = document.getElementById(btnId);
+
+    if (!logContainer || !scrollBtn) return;
+
+    logContainer.addEventListener("scroll", () => {
+        if (logContainer.scrollTop + logContainer.clientHeight < logContainer.scrollHeight - 10) {
+            scrollBtn.style.display = "block";
+        } else {
+            scrollBtn.style.display = "none";
+        }
+    });
+
+    scrollBtn.addEventListener("click", () => {
+        logContainer.scrollTop = logContainer.scrollHeight;
+    });
+}
 
 window.addEventListener('load', connect);
